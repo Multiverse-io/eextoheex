@@ -56,7 +56,7 @@ defmodule EexToHeex.CLI do
               end
             end
 
-          {:error, err} ->
+          {:error, _output, err} ->
             {:error, filename, err}
         end
       end)
