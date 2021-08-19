@@ -19,10 +19,9 @@ defmodule EexToHeexTest do
       </div>
       """
 
-      out_templ = EexToHeex.eex_to_heex(input_templ)
+      assert {:ok, out_templ} = EexToHeex.eex_to_heex(input_templ)
 
       assert input_templ == out_templ
-      check_compiles(out_templ)
     end
 
     test "<%= foo %> forms within attribute values are converted to { } syntax or plain string values as appropriate" do
@@ -46,8 +45,7 @@ defmodule EexToHeexTest do
       <div class={"\#{ class } profile-strength__container"}></div>
       """
 
-      assert out_templ == EexToHeex.eex_to_heex(input_templ)
-      check_compiles(out_templ)
+      assert {:ok, out_templ} == EexToHeex.eex_to_heex(input_templ)
     end
 
     test "handles gross non-quoted attributes with template substituted values" do
@@ -61,8 +59,7 @@ defmodule EexToHeexTest do
       </p>
       """
 
-      assert out_templ == EexToHeex.eex_to_heex(input_templ)
-      check_compiles(out_templ)
+      assert {:ok, out_templ} == EexToHeex.eex_to_heex(input_templ)
     end
 
     test "not fooled by things that look like attributes outside of opening tags" do
@@ -80,8 +77,7 @@ defmodule EexToHeexTest do
       <p>Bar</p>
       """
 
-      assert out_templ == EexToHeex.eex_to_heex(input_templ)
-      check_compiles(out_templ)
+      assert {:ok, out_templ} == EexToHeex.eex_to_heex(input_templ)
     end
 
     test "live view forms are converted correctly; </form> tags that don't close form_for don't confuse the parser; spurious closing </form> tags don't confuse the parser" do
@@ -127,11 +123,8 @@ defmodule EexToHeexTest do
       </.form>
       """
 
-      assert out_templ == EexToHeex.eex_to_heex(input_templ)
-
-      assert_raise SyntaxError, ~r[missing opening tag for </form>$], fn ->
-        check_compiles(out_templ)
-      end
+      assert {:error, err} = EexToHeex.eex_to_heex(input_templ)
+      assert err.description =~ ~r[missing opening tag for </form>$]
     end
 
     test "not fooled by f=form_for when using a block (not a live view form)" do
@@ -143,10 +136,9 @@ defmodule EexToHeexTest do
       <% end %>
       """
 
-      out_templ = EexToHeex.eex_to_heex(input_templ)
+      assert {:ok, out_templ} = EexToHeex.eex_to_heex(input_templ)
 
       assert input_templ == out_templ
-      check_compiles(out_templ)
     end
 
     test "not fooled by > inside attribute value" do
@@ -158,8 +150,7 @@ defmodule EexToHeexTest do
       <p></p><p class={"\#{ foo } > \#{ bar } >>"} foo={"\#{ foo } >"} amp={"\#{ foo } >"}></p>
       """
 
-      assert out_templ == EexToHeex.eex_to_heex(input_templ)
-      check_compiles(out_templ)
+      assert {:ok, out_templ} == EexToHeex.eex_to_heex(input_templ)
     end
 
     test "check some tricky complex attributes" do
@@ -185,8 +176,7 @@ defmodule EexToHeexTest do
       <p class={ foo }></p>
       """
 
-      assert out_templ == EexToHeex.eex_to_heex(input_templ)
-      check_compiles(out_templ)
+      assert {:ok, out_templ} == EexToHeex.eex_to_heex(input_templ)
     end
 
     test "a bug triggering case that came up" do
@@ -204,14 +194,7 @@ defmodule EexToHeexTest do
       <link rel="stylesheet" href={ PlatformRoutes.static_path(@conn, @css_bundle) }>
       """
 
-      assert out_templ == EexToHeex.eex_to_heex(input_templ)
-      check_compiles(out_templ)
+      assert {:ok, out_templ} == EexToHeex.eex_to_heex(input_templ)
     end
-  end
-
-  defp check_compiles(templ) do
-    {:ok, tmp_path} = Briefly.create()
-    File.write!(tmp_path, templ)
-    HTMLEngine.compile(tmp_path, "template.html.heex")
   end
 end

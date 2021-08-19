@@ -11,6 +11,8 @@ defmodule EexToHeex do
   for information on the differences between eex and heex templates.
   """
 
+  alias Phoenix.LiveView.HTMLEngine
+
   def eex_to_heex(str) do
     {:ok, toks} =
       EEx.Tokenizer.tokenize(str, _start_line = 1, _start_col = 0, %{trim: false, indentation: 0})
@@ -25,7 +27,19 @@ defmodule EexToHeex do
     forms = find_form_tags([], toks)
     form_reps = form_replacements(str, forms)
 
-    multireplace(str, attr_reps ++ form_reps)
+    output = multireplace(str, attr_reps ++ form_reps)
+
+    with {:ok, tmp_path} <- Briefly.create() do
+      try do
+        File.write!(tmp_path, output)
+        # Phoenix.LiveView.HTMLEngine ignores its second param
+        HTMLEngine.compile(tmp_path, "foo.html.heex")
+        {:ok, output}
+      rescue
+        err ->
+          {:error, err}
+      end
+    end
   end
 
   # Column information for some tokens is systematically off by a few chars.
@@ -159,7 +173,9 @@ defmodule EexToHeex do
         end
       )
 
-    "<.form let={#{Macro.to_string(f)}} for=#{brace_wrap(Macro.to_string(changeset))} url=#{brace_wrap(Macro.to_string(url))}#{extras}>"
+    "<.form let={#{Macro.to_string(f)}} for=#{brace_wrap(Macro.to_string(changeset))} url=#{
+      brace_wrap(Macro.to_string(url))
+    }#{extras}>"
   end
 
   defp brace_wrap(s = "\"" <> _) do
