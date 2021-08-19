@@ -1,4 +1,4 @@
-defmodule Eextoheex.MixProject do
+defmodule EexToHeex.MixProject do
   use Mix.Project
 
   def project do
@@ -23,6 +23,9 @@ defmodule Eextoheex.MixProject do
     [
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:html_entities, "~> 0.5"},
+      {:phoenix_live_view, "~> 0.16.0"},
+      {:briefly, "~> 0.3", only: :test},
     ]
   end
 end
