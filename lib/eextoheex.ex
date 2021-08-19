@@ -42,24 +42,27 @@ defmodule EexToHeex do
       form_reps = form_replacements(str, forms)
 
       output = multireplace(str, attr_reps ++ form_reps)
+      check_output(output)
+    else
+      {:error, err} ->
+        {:error, nil, err}
+    end
+  end
 
-      with {:ok, tmp_path} <- Briefly.create(),
-           :ok <- File.write(tmp_path, output) do
-        try do
-          # Phoenix.LiveView.HTMLEngine ignores its second param
-          HTMLEngine.compile(tmp_path, "foo.html.heex")
-          {:ok, output}
-        rescue
-          err ->
-            {:error, output, err}
-        end
-      else
-        {:error, err} ->
+  defp check_output(output) do
+    with {:ok, tmp_path} <- Briefly.create(),
+         :ok <- File.write(tmp_path, output) do
+      try do
+        # Phoenix.LiveView.HTMLEngine ignores its second param
+        HTMLEngine.compile(tmp_path, "foo.html.heex")
+        {:ok, output}
+      rescue
+        err ->
           {:error, output, err}
       end
     else
       {:error, err} ->
-        {:error, nil, err}
+        {:error, output, err}
     end
   end
 

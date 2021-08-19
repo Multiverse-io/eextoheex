@@ -50,10 +50,14 @@ defmodule EexToHeex.CLI do
 
               with :ok <- File.rename(filename, new_filename),
                    :ok <- File.write!(new_filename, output) do
+                {:ok, filename}
               else
                 {:error, err} ->
                   Logger.error("Error moving #{filename} to #{new_filename}", err)
+                  {:ok, filename}
               end
+            else
+              {:ok, filename}
             end
 
           {:error, _output, err} ->
