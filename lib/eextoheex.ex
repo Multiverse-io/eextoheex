@@ -207,32 +207,6 @@ defmodule EexToHeex do
     "{#{val}}"
   end
 
-  defp find_subs(accum = [{e, prefix, _suffix} | arest], toks = [{:text, _, _, txt} | trest]) do
-    txt = to_string(txt)
-
-    case Regex.run(~r/^([^"]*)(.?)/, txt) do
-      [_, suffix, en] ->
-        accum = [{e, prefix, suffix} | arest]
-
-        if en == "\"" do
-          {Enum.reverse(accum), toks}
-        else
-          find_subs(accum, trest)
-        end
-
-      nil ->
-        find_subs(accum, trest)
-    end
-  end
-
-  defp find_subs(accum, [e = {:expr, _, _, '=', _contents} | rest]) do
-    find_subs([{e, "", ""} | accum], rest)
-  end
-
-  defp find_subs(accum, toks) do
-    {Enum.reverse(accum), toks}
-  end
-
   defp find_attrs(
          inside_tag?,
          just_subbed?,
@@ -300,6 +274,32 @@ defmodule EexToHeex do
       nil ->
         {inside_tag? and not String.contains?(txt, ">"), 0}
     end
+  end
+
+  defp find_subs(accum = [{e, prefix, _suffix} | arest], toks = [{:text, _, _, txt} | trest]) do
+    txt = to_string(txt)
+
+    case Regex.run(~r/^([^"]*)(.?)/, txt) do
+      [_, suffix, en] ->
+        accum = [{e, prefix, suffix} | arest]
+
+        if en == "\"" do
+          {Enum.reverse(accum), toks}
+        else
+          find_subs(accum, trest)
+        end
+
+      nil ->
+        find_subs(accum, trest)
+    end
+  end
+
+  defp find_subs(accum, [e = {:expr, _, _, '=', _contents} | rest]) do
+    find_subs([{e, "", ""} | accum], rest)
+  end
+
+  defp find_subs(accum, toks) do
+    {Enum.reverse(accum), toks}
   end
 
   defp attr_replacements(str, quoted, [{{:expr, l, c, _, expr}, "", ""}]) do
