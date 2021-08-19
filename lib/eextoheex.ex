@@ -363,7 +363,7 @@ defmodule EexToHeex do
         end
 
       [opener] ++
-        [{expr_start, expr_end, "#{estring(prefix)}\#{#{expr}}#{HtmlEntities.decode(suffix)}"}] ++
+        [{expr_start, expr_end, "#{estring(prefix)}\#{#{expr}}#{estring(suffix)}"}] ++
         [closer]
     end)
   end
