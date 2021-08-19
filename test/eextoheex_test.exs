@@ -2,7 +2,6 @@ defmodule EexToHeexTest do
   use ExUnit.Case, async: true
   doctest EexToHeex
 
-  alias Phoenix.LiveView.HTMLEngine
   require Logger
 
   describe "eex_to_EexToHeex/1" do
@@ -123,7 +122,7 @@ defmodule EexToHeexTest do
       </.form>
       """
 
-      assert {:error, err} = EexToHeex.eex_to_heex(input_templ)
+      assert {:error, ^out_templ, err} = EexToHeex.eex_to_heex(input_templ)
       assert err.description =~ ~r[missing opening tag for </form>$]
     end
 

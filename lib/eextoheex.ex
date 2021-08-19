@@ -14,31 +14,40 @@ defmodule EexToHeex do
   alias Phoenix.LiveView.HTMLEngine
 
   def eex_to_heex(str) do
-    {:ok, toks} =
-      EEx.Tokenizer.tokenize(str, _start_line = 1, _start_col = 0, %{trim: false, indentation: 0})
+    with {:ok, toks} <-
+           EEx.Tokenizer.tokenize(str, _start_line = 1, _start_col = 0, %{
+             trim: false,
+             indentation: 0
+           }) do
+      toks = fudge_tokens(toks)
 
-    toks = fudge_tokens(toks)
+      attrs = find_attrs(false, false, [], toks)
 
-    attrs = find_attrs(false, false, [], toks)
+      attr_reps =
+        Enum.flat_map(attrs, fn {quoted, subs} -> attr_replacements(str, quoted, subs) end)
 
-    attr_reps =
-      Enum.flat_map(attrs, fn {quoted, subs} -> attr_replacements(str, quoted, subs) end)
+      forms = find_form_tags([], toks)
+      form_reps = form_replacements(str, forms)
 
-    forms = find_form_tags([], toks)
-    form_reps = form_replacements(str, forms)
+      output = multireplace(str, attr_reps ++ form_reps)
 
-    output = multireplace(str, attr_reps ++ form_reps)
-
-    with {:ok, tmp_path} <- Briefly.create() do
-      try do
-        File.write!(tmp_path, output)
-        # Phoenix.LiveView.HTMLEngine ignores its second param
-        HTMLEngine.compile(tmp_path, "foo.html.heex")
-        {:ok, output}
-      rescue
-        err ->
-          {:error, err}
+      with {:ok, tmp_path} <- Briefly.create(),
+           :ok <- File.write(tmp_path, output) do
+        try do
+          # Phoenix.LiveView.HTMLEngine ignores its second param
+          HTMLEngine.compile(tmp_path, "foo.html.heex")
+          {:ok, output}
+        rescue
+          err ->
+            {:error, output, err}
+        end
+      else
+        {:error, err} ->
+          {:error, output, err}
       end
+    else
+      {:error, err} ->
+        {:error, nil, err}
     end
   end
 
