@@ -17,14 +17,30 @@ defmodule EexToHeex.CLI do
       "convert" ->
         convert_all_templates(paths)
 
+      "run" ->
+        run(paths)
+
       _ ->
         bad_usage()
     end
   end
 
   defp bad_usage() do
-    IO.puts(:stderr, "Usage: `FOO COMMAND PATHS...` where COMMAND is 'check' or 'convert'")
+    IO.puts(:stderr, "Usage: `FOO COMMAND PATHS...` where COMMAND is 'check', 'convert' or 'run'")
     System.halt(1)
+  end
+
+  defp run(paths) do
+    Enum.map(paths, fn path ->
+      case to_heex(path) do
+        {:error, output, error} ->
+          IO.puts(output)
+          raise error
+
+        {:ok, output} ->
+          IO.puts(output)
+      end
+    end)
   end
 
   defp check_all_templates(roots) do

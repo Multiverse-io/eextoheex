@@ -195,5 +195,35 @@ defmodule EexToHeexTest do
 
       assert {:ok, out_templ} == EexToHeex.eex_to_heex(input_templ)
     end
+
+    test "test case with a complex attribute value" do
+      input_templ = """
+      <%= Patterns.card(
+        full_width: true,
+        icon: {"briefcase", :green}) do %>
+        <%= render RoleView, "_role_heading.html", Map.merge(assigns, %{tab: :availability}) %>
+          <input id="role-id" type="hidden" value="<%= @role.id %>" />
+          <input id="breadcrumbs" type="hidden" value="[
+              [&quot;Companies&quot;, &quot;<%= PlatformRoutes.manager_company_path(@conn, :index) %>&quot;],
+              [&quot;<%= @company.name %>&quot;, &quot;<%=PlatformRoutes.manager_company_path(@conn, :show, @company) %>&quot;],
+              [&quot;<%= @job_title %>&quot;, &quot;<%=PlatformRoutes.manager_company_role_overview_path(@conn, :show, @company, @role.id) %>&quot;]
+          ]" />
+        <%= render CommonView, "_elm.html" %>
+      <% end %>
+      """
+
+      out_templ = """
+      <%= Patterns.card(
+        full_width: true,
+        icon: {"briefcase", :green}) do %>
+        <%= render RoleView, "_role_heading.html", Map.merge(assigns, %{tab: :availability}) %>
+          <input id="role-id" type="hidden" value={ @role.id } />
+          <input id="breadcrumbs" type="hidden" value={"[\\n        [\\"Companies\\", \\"\#{ PlatformRoutes.manager_company_path(@conn, :index) }\\"],\\n        [\\"\#{ @company.name }\\", \\"\#{PlatformRoutes.manager_company_path(@conn, :show, @company) }\\"],\\n        [\\"\#{ @job_title }\\", \\"\#{PlatformRoutes.manager_company_role_overview_path(@conn, :show, @company, @role.id) }\\"]\\n    ]"} />
+        <%= render CommonView, "_elm.html" %>
+      <% end %>
+      """
+
+      assert {:ok, out_templ} == EexToHeex.eex_to_heex(input_templ)
+    end
   end
 end

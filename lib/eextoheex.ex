@@ -372,8 +372,9 @@ defmodule EexToHeex do
   end
 
   defp estring("" <> str) do
-    s = inspect(str)
-    HtmlEntities.decode(String.slice(s, 1, String.length(s) - 2))
+    decoded = HtmlEntities.decode(str)
+    s = inspect(decoded)
+    String.slice(s, 1, String.length(s) - 2)
   end
 
   defp scan_to_char(str, c, inc, i) do
