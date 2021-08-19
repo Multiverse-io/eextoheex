@@ -2,8 +2,8 @@ defmodule EexToHeex do
   @moduledoc """
   EexToHeex performs best effort conversion of html.eex templates to heex.
 
-  The output is not guaranteed to be correct, or even valid heex.
-  However, conversion works correctly for a sufficiently wide range of input templates
+  The output is not guaranteed to be correct. However, conversion works
+  correctly for a sufficiently wide range of input templates
   that the amount of manual conversion work can be significantly reduced.
 
   See
