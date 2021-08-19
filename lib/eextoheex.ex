@@ -13,6 +13,18 @@ defmodule EexToHeex do
 
   alias Phoenix.LiveView.HTMLEngine
 
+  @doc """
+  Performs best effort conversion of an html.eex template to a heex template.
+  Returns `{:ok, output_string}` if successful, or `{:error, output_string, error}`
+  on error. In the latter case, `output_string` may be `nil` if the error occurred
+  before any output was generated.
+
+  On success, the output is guaranteed to be a valid heex template
+  (since it has passed successfully through `HTMLEngine.compile`).
+  However, there is no general guarantee that the output template will
+  have exactly the same behavior as the input template.
+  """
+  @spec eex_to_heex(String.t()) :: {:ok, String.t()} | {:error, String.t() | nil, any()}
   def eex_to_heex(str) do
     with {:ok, toks} <-
            EEx.Tokenizer.tokenize(str, _start_line = 1, _start_col = 0, %{
