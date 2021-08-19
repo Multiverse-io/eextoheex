@@ -85,16 +85,23 @@ defmodule EexToHeex.CLI do
     oks = grouped[:ok] || []
     errors = grouped[:error] || []
 
-    IO.puts("html.eex -> heex conversion worked ok for the following #{length(oks)} templates:")
-    IO.puts("")
+    lok = length(oks)
+    lerrs = length(errors)
 
-    Enum.each(oks || [], fn {_, filename} ->
-      IO.puts("  " <> strip_path(filename))
-    end)
+    if lok > 0 do
+      IO.puts("html.eex -> heex conversion worked ok for the following #{lok} templates:")
+      IO.puts("")
 
-    IO.puts("")
-    IO.puts("The following #{length(errors)} html.eex templates could not be converted:")
-    IO.puts("")
+      Enum.each(oks || [], fn {_, filename} ->
+        IO.puts("  " <> strip_path(filename))
+      end)
+    end
+
+    if lerrs > 0 do
+      IO.puts("")
+      IO.puts("The following #{lerrs} html.eex templates could not be converted:")
+      IO.puts("")
+    end
 
     Enum.each(errors || [], fn {_, filename, err} ->
       IO.puts("  " <> strip_path(filename) <> ":")
