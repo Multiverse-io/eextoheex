@@ -221,8 +221,8 @@ defmodule EexToHeex do
     # Strip the trailing part of the last attr of this tag if there was one and it was quoted.
     txt =
       case {just_subbed?, List.first(accum)} do
-        {true, {_quoted = true, _}} ->
-          String.replace(txt, ~r/^[^"]+/, "")
+        {true, {quoted, _}} when quoted != nil ->
+          String.replace(txt, ~r/^[^#{quoted}]+/, "")
 
         _ ->
           txt
@@ -232,18 +232,22 @@ defmodule EexToHeex do
 
     if inside_tag? do
       case Regex.run(
-             ~r/\s*[[:alnum:]-]+=\s*(?:(?:\s*)|(?:"([^"]*)))$/,
+             ~r/\s*[[:alnum:]-]+=\s*(?:(?:\s*)|(?:"([^"]*))|(?:'([^']*)))$/,
              String.slice(txt, 0..-1)
            ) do
         [_, prefix] ->
-          {subs, rest} = find_subs([{e, prefix, ""}], rest)
-          find_attrs(inside_tag?, _just_subbed? = true, [{_quoted = true, subs} | accum], rest)
+          {subs, rest} = find_subs("\"", [{e, prefix, ""}], rest)
+          find_attrs(inside_tag?, _just_subbed? = true, [{_quoted = "\"", subs} | accum], rest)
+
+        [_, _, prefix] ->
+          {subs, rest} = find_subs("'", [{e, prefix, ""}], rest)
+          find_attrs(inside_tag?, _just_subbed? = true, [{_quoted = "'", subs} | accum], rest)
 
         [_] ->
           find_attrs(
             inside_tag?,
             _just_subbed? = true,
-            [{_quoted = false, [{e, "", ""}]} | accum],
+            [{_quoted = nil, [{e, "", ""}]} | accum],
             rest
           )
 
@@ -279,33 +283,37 @@ defmodule EexToHeex do
     end
   end
 
-  defp find_subs(accum = [{e, prefix, _suffix} | arest], toks = [{:text, _, _, txt} | trest]) do
+  defp find_subs(
+         quoted,
+         accum = [{e, prefix, _suffix} | arest],
+         toks = [{:text, _, _, txt} | trest]
+       ) do
     txt = to_string(txt)
 
-    case Regex.run(~r/^([^"]*)(.?)/, txt) do
+    case Regex.run(~r/^([^#{quoted}]*)(.?)/, txt) do
       [_, suffix, en] ->
         accum = [{e, prefix, suffix} | arest]
 
-        if en == "\"" do
+        if en == quoted do
           {Enum.reverse(accum), toks}
         else
-          find_subs(accum, trest)
+          find_subs(quoted, accum, trest)
         end
 
       nil ->
-        find_subs(accum, trest)
+        find_subs(quoted, accum, trest)
     end
   end
 
-  defp find_subs(accum, [e = {:expr, _, _, '=', _contents} | rest]) do
-    find_subs([{e, "", ""} | accum], rest)
+  defp find_subs(quoted, accum, [e = {:expr, _, _, '=', _contents} | rest]) do
+    find_subs(quoted, [{e, "", ""} | accum], rest)
   end
 
-  defp find_subs(accum, toks) do
+  defp find_subs(_quoted, accum, toks) do
     {Enum.reverse(accum), toks}
   end
 
-  defp attr_replacements(str, _quoted = false, [{{:expr, l, c, _, expr}, "", ""}]) do
+  defp attr_replacements(str, _quoted = nil, [{{:expr, l, c, _, expr}, "", ""}]) do
     expr = to_string(expr)
     expr_start = get_index(str, l, c)
     expr_end = expr_start + String.length(expr)
@@ -317,7 +325,7 @@ defmodule EexToHeex do
     [{open, expr_start, "{\"\#{"}, {expr_start, expr_end, expr}, {expr_end, close + 1, "}\"}"}]
   end
 
-  defp attr_replacements(str, _quoted = true, subs = [_ | _]) do
+  defp attr_replacements(str, quoted, subs = [_ | _]) do
     subs_len = length(subs)
 
     subs
@@ -329,7 +337,7 @@ defmodule EexToHeex do
 
       opener =
         if i == 0 do
-          open = scan_to_char(str, "\"", -1, expr_start)
+          open = scan_to_char(str, quoted, -1, expr_start)
           {open, expr_start, "{\""}
         else
           open = scan_to_char(str, "<", -1, expr_start)
@@ -338,7 +346,7 @@ defmodule EexToHeex do
 
       closer =
         if i == subs_len - 1 do
-          close = scan_to_char(str, "\"", 1, expr_end)
+          close = scan_to_char(str, quoted, 1, expr_end)
           {expr_end, close + 1, "\"}"}
         else
           close = scan_to_char(str, ">", 1, expr_end)
