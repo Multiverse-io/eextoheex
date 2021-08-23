@@ -35,7 +35,7 @@ defmodule EexToHeexTest do
       """
 
       out_templ = """
-      <p class={ if @foo do "class1" else "class2" end } style="some style" attr={ foo(bar) }>
+      <p class={"\#{ if @foo do "class1" else "class2" end }"} style="some style" attr={"\#{ foo(bar) }"}>
         Blah blah blah...
         <div attr={"prefix‘\#{ if @foo do "class1" else "class2" end }suffix’"}>
         </div>
@@ -54,7 +54,7 @@ defmodule EexToHeexTest do
       """
 
       out_templ = """
-      <p class={ this_should_have_been_quoted() }>
+      <p class={"\#{ this_should_have_been_quoted() }"}>
       </p>
       """
 
@@ -172,7 +172,7 @@ defmodule EexToHeexTest do
         <p class={"aa \#{ foo } bb"}></p>
       <% end %>
       <p class={"\#{ foo } ccc"}></p>
-      <p class={ foo }></p>
+      <p class={"\#{ foo }"}></p>
       """
 
       assert {:ok, out_templ} == EexToHeex.eex_to_heex(input_templ)
@@ -188,9 +188,9 @@ defmodule EexToHeexTest do
 
       out_templ = """
       <%= for local <- assigns[:localisation] do %>
-        <link rel="alternate" hreflang={ local.hreflang } href={"\#{ PlatformWeb.Endpoint.url }\#{ local.href }"} />
+        <link rel="alternate" hreflang={"\#{ local.hreflang }"} href={"\#{ PlatformWeb.Endpoint.url }\#{ local.href }"} />
       <% end %>
-      <link rel="stylesheet" href={ PlatformRoutes.static_path(@conn, @css_bundle) }>
+      <link rel="stylesheet" href={"\#{ PlatformRoutes.static_path(@conn, @css_bundle) }"}>
       """
 
       assert {:ok, out_templ} == EexToHeex.eex_to_heex(input_templ)
@@ -217,7 +217,7 @@ defmodule EexToHeexTest do
         full_width: true,
         icon: {"briefcase", :green}) do %>
         <%= render RoleView, "_role_heading.html", Map.merge(assigns, %{tab: :availability}) %>
-          <input id="role-id" type="hidden" value={ @role.id } />
+          <input id="role-id" type="hidden" value={"\#{ @role.id }"} />
           <input id="breadcrumbs" type="hidden" value={"[\\n        [\\"Companies\\", \\"\#{ PlatformRoutes.manager_company_path(@conn, :index) }\\"],\\n        [\\"\#{ @company.name }\\", \\"\#{PlatformRoutes.manager_company_path(@conn, :show, @company) }\\"],\\n        [\\"\#{ @job_title }\\", \\"\#{PlatformRoutes.manager_company_role_overview_path(@conn, :show, @company, @role.id) }\\"]\\n    ]"} />
         <%= render CommonView, "_elm.html" %>
       <% end %>

@@ -334,7 +334,7 @@ defmodule EexToHeex do
         expr_end
       )
 
-    [{open, expr_start, "{"}, {expr_start, expr_end, expr}, {expr_end, close + 1, "}"}]
+    [{open, expr_start, "{\"\#{"}, {expr_start, expr_end, expr}, {expr_end, close + 1, "}\"}"}]
   end
 
   defp attr_replacements(str, _quoted = true, subs = [_ | _]) do
