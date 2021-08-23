@@ -305,34 +305,14 @@ defmodule EexToHeex do
     {Enum.reverse(accum), toks}
   end
 
-  defp attr_replacements(str, quoted, [{{:expr, l, c, _, expr}, "", ""}]) do
+  defp attr_replacements(str, _quoted = false, [{{:expr, l, c, _, expr}, "", ""}]) do
     expr = to_string(expr)
     expr_start = get_index(str, l, c)
     expr_end = expr_start + String.length(expr)
 
-    open =
-      scan_to_char(
-        str,
-        if quoted do
-          "\""
-        else
-          "<"
-        end,
-        -1,
-        expr_start
-      )
+    open = scan_to_char(str, "<", -1, expr_start)
 
-    close =
-      scan_to_char(
-        str,
-        if quoted do
-          "\""
-        else
-          ">"
-        end,
-        1,
-        expr_end
-      )
+    close = scan_to_char(str, ">", 1, expr_end)
 
     [{open, expr_start, "{\"\#{"}, {expr_start, expr_end, expr}, {expr_end, close + 1, "}\"}"}]
   end
