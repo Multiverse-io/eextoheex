@@ -97,6 +97,9 @@ defmodule EexToHeexTest do
           </form>
         <% end %>
       </form>
+      <%= bar = form_for @changeset, "#" %>
+        ...
+      </form>
       """
 
       out_templ = """
@@ -119,6 +122,9 @@ defmodule EexToHeexTest do
             Perhaps this nested form will confuse the parser!
           </form>
         <% end %>
+      </.form>
+      <.form let={bar} for={@changeset} url="#">
+        ...
       </.form>
       """
 

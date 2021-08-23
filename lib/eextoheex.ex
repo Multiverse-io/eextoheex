@@ -183,14 +183,14 @@ defmodule EexToHeex do
             {:form_for, _,
              [
                changeset,
-               url,
-               more_args
+               url
+               | more_args
              ]}
           ]}
        ) do
     extras =
       Enum.reduce(
-        more_args,
+        List.first(more_args) || [],
         "",
         fn {k, v}, s ->
           s <> " #{String.replace(Atom.to_string(k), "_", "-")}=#{brace_wrap(Macro.to_string(v))}"
