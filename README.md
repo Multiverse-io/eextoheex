@@ -17,7 +17,7 @@ Eex                                                                  | Heex
 `<p class='<%= expr %>'>`                                            | `<p class={"#{ expr }"}`>
 `<p class="foo <%= expr1 %> bar <%= expr2 %> amp <%= expr3 %> fuzz"` | `<p class={"foo #{expr1} bar #{expr2} amp #{expr3} fuzz }"}`
 
-### Limitations
+### Limitations of attribute conversion
 
 The attribute name must be present as a literal. For example, attributes such as
 `<p <%= if @foo do "class='foo'" else "" end %>>` cannot be translated.
