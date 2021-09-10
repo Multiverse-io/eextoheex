@@ -26,7 +26,11 @@ defmodule EexToHeex.CLI do
   end
 
   defp bad_usage() do
-    IO.puts(:stderr, "Usage: `eextoheex COMMAND PATHS...` where COMMAND is 'check', 'convert' or 'run'")
+    IO.puts(
+      :stderr,
+      "Usage: `eextoheex COMMAND PATHS...` where COMMAND is 'check', 'convert' or 'run'"
+    )
+
     System.halt(1)
   end
 
