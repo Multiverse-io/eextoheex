@@ -25,3 +25,6 @@ eextoheex-*.tar
 
 # Temporary files for e.g. tests
 /tmp
+
+# The built escript
+/eextoheex
