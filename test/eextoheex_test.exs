@@ -4,7 +4,7 @@ defmodule EexToHeexTest do
 
   require Logger
 
-  describe "eex_to_EexToHeex/1" do
+  describe "eex_to_heex/1" do
     test "plain html comes back unmodified" do
       input_templ = """
       <div class="class">
