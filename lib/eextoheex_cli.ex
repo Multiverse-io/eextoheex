@@ -55,7 +55,7 @@ defmodule EexToHeex.CLI do
     eex_templates =
       roots
       |> Enum.flat_map(&ls_recursive(&1))
-      |> Enum.filter(&(&1 =~ ~r/\.html\.l?eex$/))
+      |> Enum.filter(&(&1 =~ ~r/(\.html\.l?eex$|\.ex$)/))
 
     results =
       Enum.map(eex_templates, fn filename ->
@@ -111,7 +111,14 @@ defmodule EexToHeex.CLI do
 
   defp to_heex(path) do
     contents = File.read!(path)
-    EexToHeex.eex_to_heex(contents)
+
+    case Path.extname(path) do
+      ".ex" ->
+        EexToHeex.ex_to_heex(contents)
+
+      _ ->
+        EexToHeex.eex_to_heex(contents)
+    end
   end
 
   defp ls_recursive(path) do
