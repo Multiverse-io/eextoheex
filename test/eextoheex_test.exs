@@ -331,5 +331,35 @@ defmodule EexToHeexTest do
 
       assert {:ok, out_templ} == EexToHeex.ex_to_heex(input_templ)
     end
+
+    test "returns error when leex heredoc cannot be converted" do
+      input_templ = """
+      defmodule PageLive do
+        use Phoenix.LiveView
+
+        def render(assigns) do
+          ~L"""
+          <p class="bb <%= foo %>"></not_p>
+          \"""
+        end
+      end
+      """
+
+      assert {:error, _, _} = EexToHeex.ex_to_heex(input_templ)
+    end
+
+    test "returns error when leex cannot be converted" do
+      input_templ = """
+      defmodule PageLive do
+        use Phoenix.LiveView
+
+        def render(assigns) do
+          ~L|<p class="bb <%= foo %>"></not_p>|
+        end
+      end
+      """
+
+      assert {:error, _, _} = EexToHeex.ex_to_heex(input_templ)
+    end
   end
 end

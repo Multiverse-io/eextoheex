@@ -52,9 +52,9 @@ defmodule EexToHeex do
   @spec eex_to_heex(String.t()) :: {:ok, String.t()} | {:error, String.t() | nil, any()}
   def ex_to_heex(str) do
     with {:ok, ast} <- Code.string_to_quoted(str, columns: true) do
-      {_, transformed} = Macro.prewalk(ast, str, &transform_ex/2)
+      {_, transformed} = Macro.prewalk(ast, {:ok, str}, &transform_ex/2)
 
-      {:ok, transformed}
+      transformed
     else
       {:error, err} ->
         {:error, nil, err}
@@ -63,7 +63,7 @@ defmodule EexToHeex do
 
   defp transform_ex(
          {:sigil_L, [delimiter: _, line: line, column: column], children} = ast,
-         str
+         {:ok, str}
        ) do
     transformed =
       str
@@ -76,24 +76,37 @@ defmodule EexToHeex do
   defp transform_ex(ast, str), do: {ast, str}
 
   defp transform_leex(str, [{:<<>>, [line: line, column: column], [leex]}, []]) do
-    {:ok, replacement} = eex_to_heex(leex)
-    indentation = String.length("~L|")
-    replace(str, line, column + indentation, leex, replacement)
+    case eex_to_heex(leex) do
+      {:ok, replacement} ->
+        indentation = String.length("~L|")
+        replacement = replace(str, line, column + indentation, leex, replacement)
+        {:ok, replacement}
+
+      other ->
+        other
+    end
   end
 
   defp transform_leex(str, [
          {:<<>>, [indentation: indentation, line: line, column: _], [leex]},
          []
        ]) do
-    {:ok, replacement} = eex_to_heex(leex)
+    case eex_to_heex(leex) do
+      {:ok, heex} ->
+        replacement =
+          leex
+          |> String.split("\n")
+          |> Enum.zip(String.split(heex, "\n"))
+          |> Enum.with_index()
+          |> Enum.reduce(str, fn {{from, to}, index}, str ->
+            replace(str, line + index + 1, indentation + 1, from, to)
+          end)
 
-    leex
-    |> String.split("\n")
-    |> Enum.zip(String.split(replacement, "\n"))
-    |> Enum.with_index()
-    |> Enum.reduce(str, fn {{from, to}, index}, str ->
-      replace(str, line + index + 1, indentation + 1, from, to)
-    end)
+        {:ok, replacement}
+
+      other ->
+        other
+    end
   end
 
   defp replace(text, line_num, column_num, from, to) do
