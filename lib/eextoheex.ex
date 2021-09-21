@@ -49,6 +49,88 @@ defmodule EexToHeex do
     end
   end
 
+  @spec eex_to_heex(String.t()) :: {:ok, String.t()} | {:error, String.t() | nil, any()}
+  def ex_to_heex(str) do
+    with {:ok, ast} <- Code.string_to_quoted(str, columns: true) do
+      {_, transformed} = Macro.prewalk(ast, {:ok, str}, &transform_ex/2)
+
+      transformed
+    else
+      {:error, err} ->
+        {:error, nil, err}
+    end
+  end
+
+  defp transform_ex(
+         {:sigil_L, [delimiter: _, line: line, column: column], children} = ast,
+         {:ok, str}
+       ) do
+    transformed =
+      str
+      |> replace(line, column, "~L", "~H")
+      |> transform_leex(children)
+
+    {ast, transformed}
+  end
+
+  defp transform_ex(ast, str), do: {ast, str}
+
+  defp transform_leex(str, [{:<<>>, [line: line, column: column], [leex]}, []]) do
+    case eex_to_heex(leex) do
+      {:ok, replacement} ->
+        indentation = String.length("~L|")
+        replacement = replace(str, line, column + indentation, leex, replacement)
+        {:ok, replacement}
+
+      other ->
+        other
+    end
+  end
+
+  defp transform_leex(str, [
+         {:<<>>, [indentation: indentation, line: line, column: _], [leex]},
+         []
+       ]) do
+    case eex_to_heex(leex) do
+      {:ok, heex} ->
+        replacement =
+          leex
+          |> String.split("\n")
+          |> Enum.zip(String.split(heex, "\n"))
+          |> Enum.with_index()
+          |> Enum.reduce(str, fn {{from, to}, index}, str ->
+            replace(str, line + index + 1, indentation + 1, from, to)
+          end)
+
+        {:ok, replacement}
+
+      other ->
+        other
+    end
+  end
+
+  defp replace(text, line_num, column_num, from, to) do
+    for {line, line_index} <- text |> String.split("\n") |> Enum.with_index() do
+      if line_index + 1 == line_num do
+        replace_at(line, column_num - 1, from, to)
+      else
+        line
+      end
+    end
+    |> Enum.join("\n")
+  end
+
+  defp replace_at(text, position, from, to) do
+    {a, b} = String.split_at(text, position)
+    to_replace = String.slice(b, 0, String.length(from))
+
+    if to_replace != from do
+      raise "Attempted to replace:\n\n#{from}\n\nbut found:\n\n#{to_replace}\n\nat position #{position}"
+    end
+
+    a <> String.replace_prefix(b, from, to)
+  end
+
   defp check_output(output) do
     with {:ok, tmp_path} <- Briefly.create(),
          :ok <- File.write(tmp_path, output) do
@@ -197,9 +279,7 @@ defmodule EexToHeex do
         end
       )
 
-    "<.form let={#{Macro.to_string(f)}} for=#{brace_wrap(Macro.to_string(changeset))} url=#{
-      brace_wrap(Macro.to_string(url))
-    }#{extras}>"
+    "<.form let={#{Macro.to_string(f)}} for=#{brace_wrap(Macro.to_string(changeset))} url=#{brace_wrap(Macro.to_string(url))}#{extras}>"
   end
 
   defp brace_wrap(s = "\"" <> _) do

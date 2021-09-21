@@ -276,4 +276,90 @@ defmodule EexToHeexTest do
       assert {:ok, out_templ} == EexToHeex.eex_to_heex(input_templ)
     end
   end
+
+  describe "ex_to_heex/1" do
+    test "sigil_L heredoc is converted" do
+      input_templ = """
+      defmodule PageLive do
+        use Phoenix.LiveView
+
+        def render(assigns) do
+          ~L"""
+          <p class="aa <%= foo %>"></p>
+          <p class="bb <%= foo %>"></p>
+          \"""
+        end
+      end
+      """
+
+      out_templ = """
+      defmodule PageLive do
+        use Phoenix.LiveView
+
+        def render(assigns) do
+          ~H"""
+          <p class={"aa \#{ foo }"}></p>
+          <p class={"bb \#{ foo }"}></p>
+          \"""
+        end
+      end
+      """
+
+      assert {:ok, out_templ} == EexToHeex.ex_to_heex(input_templ)
+    end
+
+    test "sigil_L is converted" do
+      input_templ = """
+      defmodule PageLive do
+        use Phoenix.LiveView
+
+        def render(assigns) do
+          ~L|<p class="aa <%= foo %>"></p>|
+        end
+      end
+      """
+
+      out_templ = """
+      defmodule PageLive do
+        use Phoenix.LiveView
+
+        def render(assigns) do
+          ~H|<p class={"aa \#{ foo }"}></p>|
+        end
+      end
+      """
+
+      assert {:ok, out_templ} == EexToHeex.ex_to_heex(input_templ)
+    end
+
+    test "returns error when leex heredoc cannot be converted" do
+      input_templ = """
+      defmodule PageLive do
+        use Phoenix.LiveView
+
+        def render(assigns) do
+          ~L"""
+          <p class="bb <%= foo %>"></not_p>
+          \"""
+        end
+      end
+      """
+
+      assert {:error, _, _} = EexToHeex.ex_to_heex(input_templ)
+    end
+
+    test "returns error when leex cannot be converted" do
+      input_templ = """
+      defmodule PageLive do
+        use Phoenix.LiveView
+
+        def render(assigns) do
+          ~L|<p class="bb <%= foo %>"></not_p>|
+        end
+      end
+      """
+
+      assert {:error, _, _} = EexToHeex.ex_to_heex(input_templ)
+    end
+  end
 end
