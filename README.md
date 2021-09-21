@@ -87,3 +87,5 @@ eextoheex run /foo/bar/foo.html.eex
 ```
 
 If the template can be autoconverted, prints the resulting `heex` template to stdout.
+
+The `run` command can also be used to convert inline `~L"""` templates in `.ex` files.
