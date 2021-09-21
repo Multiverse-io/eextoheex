@@ -49,6 +49,17 @@ defmodule EexToHeex do
     end
   end
 
+  @doc """
+  Performs best effort conversion of inline ~L templates to ~H templates.
+  Returns `{:ok, output_string}` if successful, or `{:error, output_string,
+  error}` on error. In the latter case, `output_string` may be `nil` if the
+  error occurred before any output was generated.
+
+  On success, the inline ~H templates are guaranteed to be valid, (since they've
+  passed successfully through `HTMLEngine.compile`). However, there is no
+  general guarantee that the output templates will have exactly the same
+  behavior as the input templates.
+  """
   @spec eex_to_heex(String.t()) :: {:ok, String.t()} | {:error, String.t() | nil, any()}
   def ex_to_heex(str) do
     with {:ok, ast} <- Code.string_to_quoted(str, columns: true) do
