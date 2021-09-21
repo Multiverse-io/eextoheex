@@ -284,7 +284,7 @@ defmodule EexToHeexTest do
         use Phoenix.LiveView
 
         def render(assigns) do
-          ~L"""
+          ~L\"""
           <p class="aa <%= foo %>"></p>
           <p class="bb <%= foo %>"></p>
           \"""
@@ -297,7 +297,7 @@ defmodule EexToHeexTest do
         use Phoenix.LiveView
 
         def render(assigns) do
-          ~H"""
+          ~H\"""
           <p class={"aa \#{ foo }"}></p>
           <p class={"bb \#{ foo }"}></p>
           \"""
@@ -338,7 +338,7 @@ defmodule EexToHeexTest do
         use Phoenix.LiveView
 
         def render(assigns) do
-          ~L"""
+          ~L\"""
           <p class="bb <%= foo %>"></not_p>
           \"""
         end

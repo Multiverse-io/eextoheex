@@ -125,7 +125,9 @@ defmodule EexToHeex do
     to_replace = String.slice(b, 0, String.length(from))
 
     if to_replace != from do
-      raise "Attempted to replace:\n\n#{from}\n\nbut found:\n\n#{to_replace}\n\nat position #{position}"
+      raise "Attempted to replace:\n\n#{from}\n\nbut found:\n\n#{to_replace}\n\nat position #{
+              position
+            }"
     end
 
     a <> String.replace_prefix(b, from, to)
@@ -279,7 +281,9 @@ defmodule EexToHeex do
         end
       )
 
-    "<.form let={#{Macro.to_string(f)}} for=#{brace_wrap(Macro.to_string(changeset))} url=#{brace_wrap(Macro.to_string(url))}#{extras}>"
+    "<.form let={#{Macro.to_string(f)}} for=#{brace_wrap(Macro.to_string(changeset))} url=#{
+      brace_wrap(Macro.to_string(url))
+    }#{extras}>"
   end
 
   defp brace_wrap(s = "\"" <> _) do
