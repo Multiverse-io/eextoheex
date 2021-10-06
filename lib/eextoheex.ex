@@ -60,7 +60,7 @@ defmodule EexToHeex do
   general guarantee that the output templates will have exactly the same
   behavior as the input templates.
   """
-  @spec eex_to_heex(String.t()) :: {:ok, String.t()} | {:error, String.t() | nil, any()}
+  @spec ex_to_heex(String.t()) :: {:ok, String.t()} | {:error, String.t() | nil, any()}
   def ex_to_heex(str) do
     with {:ok, ast} <- Code.string_to_quoted(str, columns: true) do
       {_, transformed} = Macro.prewalk(ast, {:ok, str}, &transform_ex/2)
