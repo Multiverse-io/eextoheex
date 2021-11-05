@@ -37,7 +37,7 @@ defmodule EexToHeex.CLI do
   defp bad_usage() do
     IO.puts(
       :stderr,
-      "Usage: `eextoheex COMMAND PATHS...` where COMMAND is 'check', 'convert' or 'run'"
+      "Usage: `eextoheex COMMAND PATHS...` where COMMAND is 'check', 'check_inline', 'convert', 'convert_inline', or 'run'"
     )
 
     System.halt(1)
