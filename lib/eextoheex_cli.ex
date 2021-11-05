@@ -1,6 +1,9 @@
 defmodule EexToHeex.CLI do
   require Logger
 
+  @eex_extensions [".html.eex", ".html.leex"]
+  @ex_extensions [".ex"]
+
   def main(args \\ []) do
     if length(args) < 2 do
       bad_usage()
@@ -12,10 +15,16 @@ defmodule EexToHeex.CLI do
 
     case cmd do
       "check" ->
-        check_all_templates(paths)
+        check_all_templates(paths, @eex_extensions, nil, &EexToHeex.eex_to_heex/1)
+
+      "check_inline" ->
+        check_all_templates(paths, @ex_extensions, nil, &EexToHeex.ex_to_heex/1)
 
       "convert" ->
-        convert_all_templates(paths)
+        convert_all_templates(paths, @eex_extensions, ".heex", &EexToHeex.eex_to_heex/1)
+
+      "convert_inline" ->
+        convert_all_templates(paths, @ex_extensions, ".ex", &EexToHeex.ex_to_heex/1)
 
       "run" ->
         run(paths)
@@ -47,43 +56,64 @@ defmodule EexToHeex.CLI do
     end)
   end
 
-  defp check_all_templates(roots) do
-    templates_helper(roots, _replace_file_on_success = false)
+  defp to_heex(path) do
+    contents = File.read!(path)
+
+    if has_extension?(path, @ex_extensions) do
+      EexToHeex.ex_to_heex(contents)
+    else
+      EexToHeex.eex_to_heex(contents)
+    end
   end
 
-  defp convert_all_templates(roots) do
-    templates_helper(roots, _replace_file_on_success = true)
+  defp check_all_templates(roots, allowed_extensions, new_extension, conversion_func) do
+    templates_helper(roots, allowed_extensions, new_extension, conversion_func)
   end
 
-  defp templates_helper(roots, move_file_on_success) do
+  defp convert_all_templates(roots, allowed_extensions, new_extension, conversion_func) do
+    templates_helper(roots, allowed_extensions, new_extension, conversion_func)
+  end
+
+  defp templates_helper(roots, allowed_extensions, new_extension, conversion_func) do
     eex_templates =
       roots
       |> Enum.flat_map(&ls_recursive(&1))
-      |> Enum.filter(&(&1 =~ ~r/(\.html\.l?eex$|\.ex$)/))
+      |> Enum.filter(&has_extension?(&1, allowed_extensions))
 
     results =
-      Enum.map(eex_templates, fn filename ->
-        case to_heex(filename) do
-          {:ok, output} ->
-            if move_file_on_success do
-              new_filename = Regex.replace(~r/\.l?eex$/, filename, ".heex")
+      eex_templates
+      |> Enum.map(fn filename ->
+        input = File.read!(filename)
 
-              with :ok <- File.rename(filename, new_filename),
-                   :ok <- File.write!(new_filename, output) do
-                {:ok, filename}
-              else
-                {:error, err} ->
-                  Logger.error("Error moving #{filename} to #{new_filename}", err)
+        case conversion_func.(File.read!(filename)) do
+          {:ok, output} ->
+            cond do
+              output == input and
+                  (new_extension == nil or new_extension == Path.extname(filename)) ->
+                # Nothing at all has changed, so don't mention this file in the output.
+                nil
+
+              new_extension ->
+                new_filename = Path.rootname(filename) <> new_extension
+
+                with :ok <- File.rename(filename, new_filename),
+                     :ok <- File.write!(new_filename, output) do
                   {:ok, filename}
-              end
-            else
-              {:ok, filename}
+                else
+                  {:error, err} ->
+                    Logger.error("Error moving #{filename} to #{new_filename}", err)
+                    {:ok, filename}
+                end
+
+              true ->
+                {:ok, filename}
             end
 
           {:error, _output, err} ->
             {:error, filename, err}
         end
       end)
+      |> Enum.filter(&(&1 != nil))
 
     grouped = Enum.group_by(results, &elem(&1, 0))
     oks = grouped[:ok] || []
@@ -93,7 +123,7 @@ defmodule EexToHeex.CLI do
     lerrs = length(errors)
 
     if lok > 0 do
-      IO.puts("html.eex -> heex conversion worked ok for the following #{lok} templates:")
+      IO.puts("conversion worked ok for the following #{lok} templates:")
       IO.puts("")
 
       Enum.each(oks || [], fn {_, filename} ->
@@ -113,16 +143,10 @@ defmodule EexToHeex.CLI do
     end)
   end
 
-  defp to_heex(path) do
-    contents = File.read!(path)
-
-    case Path.extname(path) do
-      ".ex" ->
-        EexToHeex.ex_to_heex(contents)
-
-      _ ->
-        EexToHeex.eex_to_heex(contents)
-    end
+  defp has_extension?(path, extensions) do
+    extensions
+    |> Enum.map(&String.ends_with?(path, &1))
+    |> Enum.any?()
   end
 
   defp ls_recursive(path) do
