@@ -88,8 +88,7 @@ defmodule EexToHeex.CLI do
         case conversion_func.(File.read!(filename)) do
           {:ok, output} ->
             cond do
-              output == input and
-                  (new_extension == nil or new_extension == Path.extname(filename)) ->
+              not has_extension?(filename, @ex_extensions) and output == input ->
                 # Nothing at all has changed, so don't mention this file in the output.
                 nil
 
