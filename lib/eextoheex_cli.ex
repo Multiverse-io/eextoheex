@@ -144,9 +144,7 @@ defmodule EexToHeex.CLI do
   end
 
   defp has_extension?(path, extensions) do
-    extensions
-    |> Enum.map(&String.ends_with?(path, &1))
-    |> Enum.any?()
+    Enum.any?(extensions, &String.ends_with?(path, &1))
   end
 
   defp ls_recursive(path) do
