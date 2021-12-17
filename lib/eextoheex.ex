@@ -41,7 +41,11 @@ defmodule EexToHeex do
       forms = find_form_tags([], toks)
       form_reps = form_replacements(str, forms)
 
-      output = multireplace(str, attr_reps ++ form_reps)
+      livecomponents = find_livecomponent_tags([], toks)
+
+      livecomponent_reps = livecomponent_replacements(str, livecomponents)
+
+      output = multireplace(str, attr_reps ++ form_reps ++ livecomponent_reps)
       check_output(output)
     else
       {:error, err} ->
@@ -136,9 +140,7 @@ defmodule EexToHeex do
     to_replace = String.slice(b, 0, String.length(from))
 
     if to_replace != from do
-      raise "Attempted to replace:\n\n#{from}\n\nbut found:\n\n#{to_replace}\n\nat position #{
-              position
-            }"
+      raise "Attempted to replace:\n\n#{from}\n\nbut found:\n\n#{to_replace}\n\nat position #{position}"
     end
 
     a <> String.replace_prefix(b, from, to)
@@ -292,9 +294,86 @@ defmodule EexToHeex do
         end
       )
 
-    "<.form let={#{Macro.to_string(f)}} for=#{brace_wrap(Macro.to_string(changeset))} url=#{
-      brace_wrap(Macro.to_string(url))
-    }#{extras}>"
+    "<.form let={#{Macro.to_string(f)}} for=#{brace_wrap(Macro.to_string(changeset))} url=#{brace_wrap(Macro.to_string(url))}#{extras}>"
+  end
+
+  defp find_livecomponent_tags(accum, [t = {:expr, _, _, '=', txt} | rest]) do
+    txt = to_string(txt)
+
+    if txt =~ ~r/^\s*live_component[\s|(]/ and not (txt =~ ~r/\s->\s*$/) do
+      find_livecomponent_tags([{:open, true, t} | accum], rest)
+    else
+      find_livecomponent_tags(accum, rest)
+    end
+  end
+
+  defp find_livecomponent_tags(accum, [t = {:text, _, _, txt} | rest]) do
+    txt = to_string(txt)
+    livecomponents = Regex.scan(~r{</?live_component[>\s]}i, txt, return: :index)
+
+    accums =
+      Enum.map(
+        livecomponents,
+        fn [{i, l}] ->
+          if String.starts_with?(String.downcase(String.slice(txt, i, l)), "<live_component") do
+            {:open, false, t}
+          else
+            {:close, i, t}
+          end
+        end
+      )
+
+    find_livecomponent_tags(Enum.reverse(accums) ++ accum, rest)
+  end
+
+  defp find_livecomponent_tags(accum, [_ | rest]) do
+    find_livecomponent_tags(accum, rest)
+  end
+
+  defp find_livecomponent_tags(accum, []) do
+    Enum.reverse(accum)
+  end
+
+  defp livecomponent_replacements(str, livecomponents) do
+    livecomponents
+    |> Enum.map(fn {:open, is_live, otok} ->
+      if is_live do
+        # <%= f = live_component ... %> -> <.live_component ...>
+        {:expr, tl, tc, '=', expr} = otok
+
+        expr = to_string(expr)
+
+        dot_livecomponent = mung_live_component(Code.string_to_quoted!(expr))
+        ff_start = get_index(str, tl, tc)
+
+        {
+          scan_to_char(str, "<", -1, ff_start),
+          scan_to_char(str, ">", 1, ff_start + String.length(expr)) + 1,
+          dot_livecomponent
+        }
+      else
+        []
+      end
+    end)
+  end
+
+  defp mung_live_component(
+         {:live_component, _,
+          [
+            module_name,
+            more_args
+          ]}
+       ) do
+    extras =
+      Enum.reduce(
+        more_args || [],
+        "",
+        fn {k, v}, s ->
+          s <> " #{String.replace(Atom.to_string(k), "_", "-")}=#{brace_wrap(Macro.to_string(v))}"
+        end
+      )
+
+    "<.live_component module=#{brace_wrap(Macro.to_string(module_name))} #{extras} />"
   end
 
   defp brace_wrap(s = "\"" <> _) do
