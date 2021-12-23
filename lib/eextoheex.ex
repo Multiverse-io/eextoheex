@@ -369,7 +369,7 @@ defmodule EexToHeex do
         more_args || [],
         "",
         fn {k, v}, s ->
-          s <> " #{String.replace(Atom.to_string(k), "_", "-")}=#{brace_wrap(Macro.to_string(v))}"
+          s <> " #{Atom.to_string(k)}=#{brace_wrap(Macro.to_string(v))}"
         end
       )
 
