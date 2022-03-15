@@ -111,7 +111,7 @@ defmodule EexToHeexTest do
         </.form>
       </form>
       </form> <!-- spurious closing tag; there are no open forms here -->
-      <.form let={foobar2} for={@changeset} url="#" phx-submit="save" phx-change={if(foo) do
+      <.form let={foobar2} for={@changeset} url="#" phx-submit="save" phx-change={if foo do
         bar
       else
         amp
