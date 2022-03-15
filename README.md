@@ -22,10 +22,14 @@ Eex                                                                  | Heex
 The attribute name must be present as a literal. For example, attributes such as
 `<p <%= if @foo do "class='foo'" else "" end %>>` cannot be translated.
 
-It is unfortunately not possible to translate attributes like `class="<%= @foo %>"` simply to `class={ @foo }`.
-This gives the wrong result when `@foo` is not a string. For example, if `foo` is `false`, then Eex outputs
-`class="false"`, whereas Heex simply omits the `class` attribute altogether.
-Thus, `class="<%= @foo %>"` has to be translated to `class={"#{ @foo }"}`.
+It is unfortunately not possible to translate attributes like `attribute="<%= @foo %>"` simply to `attribute={ @foo }`.
+This gives the wrong result when `@foo` is `nil` or `false`. For example, if `foo` is `false`, then Eex outputs
+`attribute="false"`, whereas Heex simply omits the `attribute` attribute altogether.
+Thus, `attribute="<%= @foo %>"` has to be translated to `attribute={"#{ @foo }"}`.
+
+If you would prefer to output the short form and take the (small) additional
+risk of incorrect output, you may consider using the [super-seguros
+fork](https://github.com/super-seguros/eextoheex).
 
 ## Live view forms
 
