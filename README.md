@@ -12,9 +12,9 @@ manual conversion.
 
 Eex                                                                  | Heex
 ---------------------------------------------------------------------|-------------------------------------------------------------
-`<p class=<%= expr %>>`                                              | `<p class={"#{ expr }"}`>
-`<p class="<%= expr %>">`                                            | `<p class={"#{ expr }"}`>
-`<p class='<%= expr %>'>`                                            | `<p class={"#{ expr }"}`>
+`<p class=<%= expr %>>`                                              | `<p class={"#{ expr }"}>`
+`<p class="<%= expr %>">`                                            | `<p class={"#{ expr }"}>`
+`<p class='<%= expr %>'>`                                            | `<p class={"#{ expr }"}>`
 `<p class="foo <%= expr1 %> bar <%= expr2 %> amp <%= expr3 %> fuzz"` | `<p class={"foo #{expr1} bar #{expr2} amp #{expr3} fuzz }"}`
 
 ### Limitations of attribute conversion
