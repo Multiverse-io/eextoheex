@@ -28,7 +28,7 @@ defmodule EexToHeex.MixProject do
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
       {:html_entities, "~> 0.5"},
       {:phoenix_live_view, "~> 0.17.5", runtime: false},
-      {:briefly, "~> 0.3"},
+      {:briefly, "~> 0.4"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
