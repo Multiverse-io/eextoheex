@@ -282,7 +282,7 @@ defmodule EexToHeex do
         end
       )
 
-    "<.form :let={#{Macro.to_string(f)}} for=#{brace_wrap(Macro.to_string(changeset))} action={~p#{brace_wrap(Macro.to_string(url))}}#{extras}>"
+    "<.form :let={#{Macro.to_string(f)}} for=#{brace_wrap(Macro.to_string(changeset))} action={#{brace_wrap(Macro.to_string(url))}}#{extras}>"
   end
 
   defp find_livecomponent_tags(accum, [t = {:expr, ~c"=", txt, _opts} | rest]) do
