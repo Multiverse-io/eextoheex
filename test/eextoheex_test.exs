@@ -104,14 +104,14 @@ defmodule EexToHeexTest do
 
       out_templ = """
       <form>
-        <.form let={f} for={@changeset} url="#" phx-submit="save" phx-change="change">
+        <.form :let={f} for={@changeset} action={~p"#"} phx-submit="save" phx-change="change">
           <%= PlatformWeb.Patterns.card_buttons() do %>
             <button class="button-primary" phx-action="Save" phx_disable_with="Saving...">Add Postcode</button>
           <% end %>
         </.form>
       </form>
       </form> <!-- spurious closing tag; there are no open forms here -->
-      <.form let={foobar2} for={@changeset} url="#" phx-submit="save" phx-change={if foo do
+      <.form :let={foobar2} for={@changeset} action={~p"#"} phx-submit="save" phx-change={if foo do
         bar
       else
         amp
@@ -123,7 +123,7 @@ defmodule EexToHeexTest do
           </form>
         <% end %>
       </.form>
-      <.form let={bar} for={@changeset} url="#">
+      <.form :let={bar} for={@changeset} action={~p"#"}>
         ...
       </.form>
       """
