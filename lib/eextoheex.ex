@@ -27,10 +27,7 @@ defmodule EexToHeex do
   @spec eex_to_heex(String.t()) :: {:ok, String.t()} | {:error, String.t() | nil, any()}
   def eex_to_heex(str) do
     with {:ok, toks} <-
-           EEx.Tokenizer.tokenize(str, _start_line = 1, _start_col = 0, %{
-             trim: false,
-             indentation: 0
-           }) do
+           EEx.tokenize(str, %{trim: false, indentation: 0}) do
       toks = fudge_tokens(toks)
 
       attrs = find_attrs(false, false, [], toks)
@@ -189,7 +186,7 @@ defmodule EexToHeex do
     end)
   end
 
-  defp find_form_tags(accum, [t = {:expr, _, _, '=', txt} | rest]) do
+  defp find_form_tags(accum, [t = {:expr, _, _, ~c"=", txt} | rest]) do
     txt = to_string(txt)
 
     if txt =~ ~r/^\s*[[:alnum:]_]+\s*=\s*form_for[\s|(]/ and not (txt =~ ~r/\s->\s*$/) do
@@ -250,7 +247,7 @@ defmodule EexToHeex do
     |> Enum.flat_map(fn {{:open, is_live, otok}, {:close, ci, ctok}} ->
       if is_live do
         # <%= f = form_for ... %> -> <.form ...>
-        {:expr, tl, tc, '=', expr} = otok
+        {:expr, tl, tc, ~c"=", expr} = otok
         expr = to_string(expr)
         dot_form = mung_form_for(Code.string_to_quoted!(expr))
         ff_start = get_index(str, tl, tc)
@@ -297,7 +294,7 @@ defmodule EexToHeex do
     "<.form let={#{Macro.to_string(f)}} for=#{brace_wrap(Macro.to_string(changeset))} url=#{brace_wrap(Macro.to_string(url))}#{extras}>"
   end
 
-  defp find_livecomponent_tags(accum, [t = {:expr, _, _, '=', txt} | rest]) do
+  defp find_livecomponent_tags(accum, [t = {:expr, _, _, ~c"=", txt} | rest]) do
     txt = to_string(txt)
 
     if txt =~ ~r/^\s*live_component[\s|(]/ and not (txt =~ ~r/\s->\s*$/) do
@@ -339,7 +336,7 @@ defmodule EexToHeex do
     |> Enum.map(fn {:open, is_live, otok} ->
       if is_live do
         # <%= f = live_component ... %> -> <.live_component ...>
-        {:expr, tl, tc, '=', expr} = otok
+        {:expr, tl, tc, ~c"=", expr} = otok
 
         expr = to_string(expr)
 
@@ -388,7 +385,7 @@ defmodule EexToHeex do
          inside_tag?,
          just_subbed?,
          accum,
-         [{:text, _, _, txt}, e = {:expr, _, _, '=', _contents} | rest]
+         [{:text, _, _, txt}, e = {:expr, _, _, ~c"=", _contents} | rest]
        ) do
     txt = to_string(txt)
 
@@ -479,7 +476,7 @@ defmodule EexToHeex do
     end
   end
 
-  defp find_subs(quoted, accum, [e = {:expr, _, _, '=', _contents} | rest]) do
+  defp find_subs(quoted, accum, [e = {:expr, _, _, ~c"=", _contents} | rest]) do
     find_subs(quoted, [{e, "", ""} | accum], rest)
   end
 
