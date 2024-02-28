@@ -26,8 +26,7 @@ defmodule EexToHeex do
   """
   @spec eex_to_heex(String.t()) :: {:ok, String.t()} | {:error, String.t() | nil, any()}
   def eex_to_heex(str) do
-    with {:ok, toks} <-
-           EEx.tokenize(str, %{trim: false, indentation: 0}) do
+    with {:ok, toks} <- EEx.tokenize(str) do
       toks = fudge_tokens(toks)
 
       attrs = find_attrs(false, false, [], toks)
@@ -164,21 +163,13 @@ defmodule EexToHeex do
   defp fudge_tokens(tokens) do
     Enum.map(tokens, fn tok ->
       case tok do
-        {:text, l, c, t} ->
-          {:text, l,
-           if l == 1 do
-             c
-           else
-             c - 1
-           end, t}
+        {:text, t, %{line: l, column: c}} ->
+          c = if l == 1, do: c, else: c - 1
+          {:text, t, %{line: l, column: c}}
 
-        {:expr, l, c, eq, expr} ->
-          {:expr, l,
-           if l == 1 do
-             c + 3
-           else
-             c + 2
-           end, eq, expr}
+        {:expr, eq, expr, %{line: l, column: c}} ->
+          c = if l == 1, do: c + 3, else: c + 2
+          {:expr, eq, expr, %{line: l, column: c}}
 
         _ ->
           tok
@@ -186,7 +177,7 @@ defmodule EexToHeex do
     end)
   end
 
-  defp find_form_tags(accum, [t = {:expr, _, _, ~c"=", txt} | rest]) do
+  defp find_form_tags(accum, [t = {:expr, ~c"=", txt, _} | rest]) do
     txt = to_string(txt)
 
     if txt =~ ~r/^\s*[[:alnum:]_]+\s*=\s*form_for[\s|(]/ and not (txt =~ ~r/\s->\s*$/) do
@@ -196,7 +187,7 @@ defmodule EexToHeex do
     end
   end
 
-  defp find_form_tags(accum, [t = {:text, _, _, txt} | rest]) do
+  defp find_form_tags(accum, [t = {:text, txt, _} | rest]) do
     txt = to_string(txt)
     forms = Regex.scan(~r{</?form[>\s]}i, txt, return: :index)
 
@@ -247,12 +238,12 @@ defmodule EexToHeex do
     |> Enum.flat_map(fn {{:open, is_live, otok}, {:close, ci, ctok}} ->
       if is_live do
         # <%= f = form_for ... %> -> <.form ...>
-        {:expr, tl, tc, ~c"=", expr} = otok
+        {:expr, ~c"=", expr, %{line: tl, column: tc}} = otok
         expr = to_string(expr)
         dot_form = mung_form_for(Code.string_to_quoted!(expr))
         ff_start = get_index(str, tl, tc)
 
-        {:text, l, c, _} = ctok
+        {:text, _, %{line: l, column: c}} = ctok
         close_start = get_index(str, l, c) + ci
 
         ff_repl = {
@@ -294,7 +285,7 @@ defmodule EexToHeex do
     "<.form let={#{Macro.to_string(f)}} for=#{brace_wrap(Macro.to_string(changeset))} url=#{brace_wrap(Macro.to_string(url))}#{extras}>"
   end
 
-  defp find_livecomponent_tags(accum, [t = {:expr, _, _, ~c"=", txt} | rest]) do
+  defp find_livecomponent_tags(accum, [t = {:expr, ~c"=", txt, _opts} | rest]) do
     txt = to_string(txt)
 
     if txt =~ ~r/^\s*live_component[\s|(]/ and not (txt =~ ~r/\s->\s*$/) do
@@ -304,7 +295,7 @@ defmodule EexToHeex do
     end
   end
 
-  defp find_livecomponent_tags(accum, [t = {:text, _, _, txt} | rest]) do
+  defp find_livecomponent_tags(accum, [t = {:text, txt, _opts} | rest]) do
     txt = to_string(txt)
     livecomponents = Regex.scan(~r{</?live_component[>\s]}i, txt, return: :index)
 
@@ -336,7 +327,7 @@ defmodule EexToHeex do
     |> Enum.map(fn {:open, is_live, otok} ->
       if is_live do
         # <%= f = live_component ... %> -> <.live_component ...>
-        {:expr, tl, tc, ~c"=", expr} = otok
+        {:expr, ~c"=", expr, %{line: tl, column: tc}} = otok
 
         expr = to_string(expr)
 
@@ -385,7 +376,7 @@ defmodule EexToHeex do
          inside_tag?,
          just_subbed?,
          accum,
-         [{:text, _, _, txt}, e = {:expr, _, _, ~c"=", _contents} | rest]
+         [{:text, txt, _opts}, e = {:expr, ~c"=", _contents, _pos} | rest]
        ) do
     txt = to_string(txt)
 
@@ -430,7 +421,7 @@ defmodule EexToHeex do
     end
   end
 
-  defp find_attrs(inside_tag?, _just_subbed?, accum, [{:text, _, _, txt} | rest]) do
+  defp find_attrs(inside_tag?, _just_subbed?, accum, [{:text, txt, _opts} | rest]) do
     txt = to_string(txt)
     {inside_tag?, _} = update_inside_tag(inside_tag?, txt)
     find_attrs(inside_tag?, _just_subbed? = false, accum, rest)
@@ -457,7 +448,7 @@ defmodule EexToHeex do
   defp find_subs(
          quoted,
          accum = [{e, prefix, _suffix} | arest],
-         toks = [{:text, _, _, txt} | trest]
+         toks = [{:text, txt, _opts} | trest]
        ) do
     txt = to_string(txt)
 
@@ -476,7 +467,7 @@ defmodule EexToHeex do
     end
   end
 
-  defp find_subs(quoted, accum, [e = {:expr, _, _, ~c"=", _contents} | rest]) do
+  defp find_subs(quoted, accum, [e = {:expr, ~c"=", _contents, _opts} | rest]) do
     find_subs(quoted, [{e, "", ""} | accum], rest)
   end
 
@@ -484,7 +475,7 @@ defmodule EexToHeex do
     {Enum.reverse(accum), toks}
   end
 
-  defp attr_replacements(str, _quoted = nil, [{{:expr, l, c, _, expr}, "", ""}]) do
+  defp attr_replacements(str, _quoted = nil, [{{:expr, _, expr, %{line: l, column: c}}, "", ""}]) do
     expr = to_string(expr)
     expr_start = get_index(str, l, c)
     expr_end = expr_start + String.length(expr)
@@ -501,7 +492,7 @@ defmodule EexToHeex do
 
     subs
     |> Enum.with_index()
-    |> Enum.flat_map(fn {{{:expr, l, c, _, expr}, prefix, suffix}, i} ->
+    |> Enum.flat_map(fn {{{:expr, _, expr, %{line: l, column: c}}, prefix, suffix}, i} ->
       expr = to_string(expr)
       expr_start = get_index(str, l, c)
       expr_end = expr_start + String.length(expr)
