@@ -4,7 +4,7 @@ defmodule EexToHeex.MixProject do
   def project do
     [
       app: :eextoheex,
-      version: "0.1.5",
+      version: "0.2.5",
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
