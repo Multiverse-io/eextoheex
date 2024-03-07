@@ -576,7 +576,7 @@ defmodule EexToHeex do
 
   defp get_index_helper(str, line, col, current_line, current_col, index) do
     get_index_helper(
-      String.slice(str, 1..-1),
+      String.slice(str, 1..-1//1),
       line,
       col,
       current_line,
