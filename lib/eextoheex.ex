@@ -395,7 +395,7 @@ defmodule EexToHeex do
     if inside_tag? do
       case Regex.run(
              ~r/\s*[[:alnum:]-]+=\s*(?:(?:\s*)|(?:"([^"]*))|(?:'([^']*)))$/,
-             String.slice(txt, 0..-1)
+             txt
            ) do
         [_, prefix] ->
           {subs, rest} = find_subs("\"", [{e, prefix, ""}], rest)
