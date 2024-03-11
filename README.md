@@ -44,7 +44,7 @@ If the parser finds something like
 it is converted to
 
 ```
-<.form let={foo} for={@changeset} url="#" phx-submit="save" phx-change="change">
+<.form let={foo} for={@changeset} action="#" phx-submit="save" phx-change="change">
   ...
 </.form>
 ```
